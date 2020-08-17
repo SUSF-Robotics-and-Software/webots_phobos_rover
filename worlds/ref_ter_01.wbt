@@ -1,0 +1,28 @@
+#VRML_SIM R2020b utf8
+WorldInfo {
+}
+Viewpoint {
+  orientation -0.2628926960236831 0.5084121898556233 0.8200027290098546 3.9491212780219747
+  position -1.602657561490379 1.0825353470676045 1.0648295136316104
+  follow "robot"
+}
+TexturedBackground {
+  texture "mars"
+}
+TexturedBackgroundLight {
+}
+UnevenTerrain {
+  rotation 1 0 0 1.5707996938995747
+  appearance SandyGround {
+    colorOverride 0.807843 0.360784 0
+    textureTransform TextureTransform {
+      scale 10 10
+    }
+  }
+  randomSeed 9
+  flatCenter TRUE
+  perlinNOctaves 6
+}
+phobos_rover_v01 {
+  translation 0 0 0.17
+}

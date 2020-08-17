@@ -1,0 +1,676 @@
+PROTO phobos_rover_v01 [
+    field SFVec3f    translation  0 0 0
+    field SFRotation rotation     1 0 0 0
+]
+{
+    Robot {
+        translation IS translation
+        rotation IS rotation
+
+        children [
+            # Rover body
+            DEF RB Shape {
+                appearance PBRAppearance {
+                    baseColor 0.01 0.01 0.07
+                    roughness 1
+                    metalness 0
+                }
+                geometry Box {
+                    size 0.390 0.180 0.088
+                }
+            }
+            # Left bogie joint
+            DEF FL_BOGIE_PIVOT HingeJoint {
+                jointParameters HingeJointParameters {
+                    anchor 0.075 0.10625 0.0260
+                    axis 0 1 0
+                }
+                device [
+                    # Position sensors not available on v01 of the rover but 
+                    # useful for debuging/plotting
+                    PositionSensor {
+                        noise 0 
+                        resolution -1
+                    }
+                ]
+                endPoint Solid {
+                    name "fl_bogie"
+                    translation 0.075 0.10625 0.0260
+                    rotation 1 0 0 0
+                    children [
+                        # Left bogie assembly
+                        DEF LEFT_BOGIE Group {
+                            children [
+                                # Upper part of the left bogie
+                                DEF SB_UPPER Shape {
+                                    appearance PBRAppearance {
+                                        baseColor 0.917647 0.145098 0.145098
+                                        roughness 1
+                                        metalness 0
+                                    }
+                                    geometry Box {
+                                        size 0.200 0.0125 0.030
+                                    }
+                                }
+                                Transform {
+                                    translation 0.075 0 -0.040
+                                    rotation 1 0 0 0
+                                    children [
+                                        # Front part of the left bogie
+                                        DEF SB_LOWER Shape {
+                                            appearance PBRAppearance {
+                                                baseColor 0.917647 0.145098 0.145098
+                                                roughness 1
+                                                metalness 0
+                                            }
+                                            geometry Box {
+                                                size 0.05 0.0125 0.05
+                                            }
+                                        }
+                                        # Front Left wheel stack
+                                        Transform {
+                                            translation 0 0.0375 0
+                                            rotation 1 0 0 0
+                                            children [
+                                                # Left hand wheel stack mount
+                                                DEF WS_MOUNT Shape {
+                                                    appearance PBRAppearance {
+                                                        baseColor 0.917647 0.145098 0.145098
+                                                        roughness 1
+                                                        metalness 0
+                                                    }
+                                                    geometry Box {
+                                                        size 0.050 0.066 0.050
+                                                    }
+                                                }
+                                                # Front left wheel gimbal
+                                                DEF FL_GIMBAL HingeJoint {
+                                                    jointParameters HingeJointParameters {
+                                                        anchor 0 0.0084 0
+                                                        axis 0 0 1
+                                                    }
+                                                    device [
+                                                        RotationalMotor {
+                                                            name "fl_gimbal"
+                                                            minPosition -1.5865
+                                                            maxPosition  1.5865
+                                                        }
+                                                    ]
+                                                    endPoint Solid {
+                                                        name "fl_bracket"
+                                                        translation 0 0.00515 -0.07125
+                                                        rotation 1 0 0 0
+                                                        children [
+                                                            DEF WS_BRACKET Shape {
+                                                                appearance PBRAppearance {
+                                                                    baseColor 0.917647 0.145098 0.145098
+                                                                    roughness 1
+                                                                    metalness 0
+                                                                }
+                                                                geometry Box {
+                                                                    size 0.035 0.0835 0.0775
+                                                                }
+                                                            }
+                                                            DEF FL_DRIVE HingeJoint {
+                                                                jointParameters HingeJointParameters {
+                                                                    anchor 0 0.0084 -0.02125
+                                                                    axis 0 1 0
+                                                                }
+                                                                device [
+                                                                    RotationalMotor {
+                                                                        name "fl_drive"
+                                                                        maxVelocity 3.6458
+                                                                    }
+                                                                ]
+                                                                endPoint Solid {
+                                                                    translation 0 0.0084 -0.02125
+                                                                    rotation 1 0 0 0
+                                                                    children [
+                                                                        DEF WS_WHEEL Shape {
+                                                                            appearance PBRAppearance {
+                                                                                baseColor 0.917647 0.145098 0.145098
+                                                                                roughness 1
+                                                                                metalness 0
+                                                                            }
+                                                                            geometry Cylinder {
+                                                                                radius 0.052
+                                                                                height 0.050
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                    boundingObject USE WS_WHEEL
+                                                                    physics Physics {
+                                                                        density -1
+                                                                        mass 0.075
+                                                                    }
+                                                                }
+                                                            }
+                                                        ]
+                                                        boundingObject USE WS_BRACKET
+                                                        physics Physics {
+                                                            density -1
+                                                            mass 0.075
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                                Transform {
+                                    translation -0.075 0 -0.040
+                                    rotation 1 0 0 0
+                                    children [
+                                        # Rear part of the left bogie
+                                        USE SB_LOWER
+                                        # Middle Left wheel stack
+                                        Transform {
+                                            translation 0 0.0375 0
+                                            rotation 1 0 0 0
+                                            children [
+                                                # Mount for wheel
+                                                USE WS_MOUNT
+                                                # Middle left wheel gimbal
+                                                DEF ML_GIMBAL HingeJoint {
+                                                    jointParameters HingeJointParameters {
+                                                        anchor 0 0.0084 0
+                                                        axis 0 0 1
+                                                    }
+                                                    device [
+                                                        RotationalMotor {
+                                                            name "ml_gimbal"
+                                                            minPosition -1.5865
+                                                            maxPosition  1.5865
+                                                        }
+                                                    ]
+                                                    endPoint Solid {
+                                                        name "ml_bracket"
+                                                        translation 0 0.00515 -0.07125
+                                                        rotation 1 0 0 0
+                                                        children [
+                                                            USE WS_BRACKET
+                                                            DEF ML_DRIVE HingeJoint {
+                                                                jointParameters HingeJointParameters {
+                                                                    anchor 0 0.0084 -0.02125
+                                                                    axis 0 1 0
+                                                                }
+                                                                device [
+                                                                    RotationalMotor {
+                                                                        name "ml_drive"
+                                                                        maxVelocity 3.6458
+                                                                    }
+                                                                ]
+                                                                endPoint Solid {
+                                                                    translation 0 0.0084 -0.02125
+                                                                    rotation 1 0 0 0
+                                                                    children [
+                                                                        USE WS_WHEEL
+                                                                    ]
+                                                                    boundingObject USE WS_WHEEL
+                                                                    physics Physics {
+                                                                        density -1
+                                                                        mass 0.075
+                                                                    }
+                                                                }
+                                                            }
+                                                        ]
+                                                        boundingObject USE WS_BRACKET
+                                                        physics Physics {
+                                                            density -1
+                                                            mass 0.075
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                    boundingObject USE SB_UPPER
+                    physics Physics {
+                        density -1
+                        mass 0.330
+                    }
+                }
+            }
+            # Right bogie joint
+            DEF FR_BOGIE_PIVOT HingeJoint {
+                jointParameters HingeJointParameters {
+                    anchor 0.075 -0.10625 0.0260
+                    axis 0 1 0
+                }
+                device [
+                    # Position sensors not available on v01 of the rover but 
+                    # useful for debuging/plotting
+                    PositionSensor {
+                        noise 0 
+                        resolution -1
+                    }
+                ]
+                endPoint Solid {
+                    name "fr_bogie"
+                    translation 0.075 -0.10625 0.0260
+                    rotation 1 0 0 0
+                    children [
+                        # Right bogie assembly
+                        DEF RIGHT_BOGIE Group {
+                            children [
+                                # Upper part of the right bogie
+                                USE SB_UPPER
+                                Transform {
+                                    translation 0.075 0 -0.040
+                                    rotation 1 0 0 0
+                                    children [
+                                        # Front part of the right bogie
+                                        USE SB_LOWER
+                                        # Front right wheel stack
+                                        Transform {
+                                            translation 0 -0.0375 0
+                                            rotation 1 0 0 0
+                                            children [
+                                                # Right hand wheel stack mount
+                                                USE WS_MOUNT
+                                                # Front right wheel gimbal
+                                                DEF FR_GIMBAL HingeJoint {
+                                                    jointParameters HingeJointParameters {
+                                                        anchor 0 -0.0084 0
+                                                        axis 0 0 1
+                                                    }
+                                                    device [
+                                                        RotationalMotor {
+                                                            name "fr_gimbal"
+                                                            minPosition -1.5865
+                                                            maxPosition  1.5865
+                                                        }
+                                                    ]
+                                                    endPoint Solid {
+                                                        name "fr_bracket"
+                                                        translation 0 -0.00515 -0.07125
+                                                        rotation 1 0 0 0
+                                                        children [
+                                                            USE WS_BRACKET
+                                                            DEF FR_DRIVE HingeJoint {
+                                                                jointParameters HingeJointParameters {
+                                                                    anchor 0 -0.0084 -0.02125
+                                                                    axis 0 1 0
+                                                                }
+                                                                device [
+                                                                    RotationalMotor {
+                                                                        name "fr_drive"
+                                                                        maxVelocity 3.6458
+                                                                    }
+                                                                ]
+                                                                endPoint Solid {
+                                                                    translation 0 -0.0084 -0.02125
+                                                                    rotation 1 0 0 0
+                                                                    children [
+                                                                        USE WS_WHEEL
+                                                                    ]
+                                                                    boundingObject USE WS_WHEEL
+                                                                    physics Physics {
+                                                                        density -1
+                                                                        mass 0.075
+                                                                    }
+                                                                }
+                                                            }
+                                                        ]
+                                                        boundingObject USE WS_BRACKET
+                                                        physics Physics {
+                                                            density -1
+                                                            mass 0.075
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                                Transform {
+                                    translation -0.075 0 -0.040
+                                    rotation 1 0 0 0
+                                    children [
+                                        # Rear part of the right bogie
+                                        USE SB_LOWER
+                                        # Middle right wheel stack
+                                        Transform {
+                                            translation 0 -0.0375 0
+                                            rotation 1 0 0 0
+                                            children [
+                                                # Mount for wheel
+                                                USE WS_MOUNT
+                                                # Middle left wheel gimbal
+                                                DEF MR_GIMBAL HingeJoint {
+                                                    jointParameters HingeJointParameters {
+                                                        anchor 0 -0.0084 0
+                                                        axis 0 0 1
+                                                    }
+                                                    device [
+                                                        RotationalMotor {
+                                                            name "mr_gimbal"
+                                                            minPosition -1.5865
+                                                            maxPosition  1.5865
+                                                        }
+                                                    ]
+                                                    endPoint Solid {
+                                                        name "mr_bracket"
+                                                        translation 0 -0.00515 -0.07125
+                                                        rotation 1 0 0 0
+                                                        children [
+                                                            USE WS_BRACKET
+                                                            DEF MR_DRIVE HingeJoint {
+                                                                jointParameters HingeJointParameters {
+                                                                    anchor 0 -0.0084 -0.02125
+                                                                    axis 0 1 0
+                                                                }
+                                                                device [
+                                                                    RotationalMotor {
+                                                                        name "mr_drive"
+                                                                        maxVelocity 3.6458
+                                                                    }
+                                                                ]
+                                                                endPoint Solid {
+                                                                    translation 0 -0.0084 -0.02125
+                                                                    rotation 1 0 0 0
+                                                                    children [
+                                                                        USE WS_WHEEL
+                                                                    ]
+                                                                    boundingObject USE WS_WHEEL
+                                                                    physics Physics {
+                                                                        density -1
+                                                                        mass 0.075
+                                                                    }
+                                                                }
+                                                            }
+                                                        ]
+                                                        boundingObject USE WS_BRACKET
+                                                        physics Physics {
+                                                            density -1
+                                                            mass 0.075
+                                                        }
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                    boundingObject USE SB_UPPER
+                    physics Physics {
+                        density -1
+                        mass 0.330
+                    }
+                }
+            }
+            # Rear bogie joint
+            DEF RM_BOGIE_PIVOT HingeJoint {
+                jointParameters HingeJointParameters {
+                    anchor -0.20475 0.0 0.0080
+                    axis 1 0 0 
+                }
+                device [
+                    # Position sensors not available on v01 of the rover but 
+                    # useful for debuging/plotting
+                    PositionSensor {
+                        noise 0 
+                        resolution -1
+                    }
+                ]
+                endPoint Solid {
+                    name "rm_bogie"
+                    translation -0.20475 0.0 0.0080
+                    rotation 1 0 0 0
+                    children [
+                        DEF REAR_BOGIE Group {
+                            children [
+                                # Upper part of the rear bogie
+                                DEF RB_MIDDLE Shape {
+                                    appearance PBRAppearance {
+                                        baseColor 0.917647 0.145098 0.145098
+                                        roughness 1
+                                        metalness 0
+                                    }
+                                    geometry Box {
+                                        size 0.0125 0.220 0.030
+                                    }
+                                }
+                                # Left part of the rear bogie
+                                Transform {
+                                    translation 0.0425 0.10375 0
+                                    rotation 1 0 0 0 
+                                    children [
+                                        # Left upper part of the rear bogie
+                                        DEF RB_UPPER Shape {
+                                            appearance PBRAppearance {
+                                                baseColor 0.917647 0.145098 0.145098
+                                                roughness 1
+                                                metalness 0
+                                            }
+                                            geometry Box {
+                                                size 0.0725 0.0125 0.030
+                                            }
+                                        }
+                                        # Left lower part of the rear bogie
+                                        Transform {
+                                            translation 0.01125 0 -0.0325
+                                            rotation 1 0 0 0
+                                            children [
+                                                # Lower left shape
+                                                DEF RB_LOWER Shape {
+                                                    appearance PBRAppearance {
+                                                        baseColor 0.917647 0.145098 0.145098
+                                                        roughness 1
+                                                        metalness 0
+                                                    }
+                                                    geometry Box {
+                                                        size 0.050 0.0125 0.035
+                                                    }
+                                                }
+                                                # RL wheel stack
+                                                Transform {
+                                                    translation 0 0.0375 0.0075
+                                                    rotation 1 0 0 0
+                                                    children [
+                                                        # Left hand wheel stack mount
+                                                        USE WS_MOUNT
+                                                        # Rear left wheel gimbal
+                                                        DEF RL_GIMBAL HingeJoint {
+                                                            jointParameters HingeJointParameters {
+                                                                anchor 0 0.0084 0
+                                                                axis 0 0 1
+                                                            }
+                                                            device [
+                                                                RotationalMotor {
+                                                                    name "rl_gimbal"
+                                                                    minPosition -1.5865
+                                                                    maxPosition  1.5865
+                                                                }
+                                                            ]
+                                                            endPoint Solid {
+                                                                name "rl_bracket"
+                                                                translation 0 0.00515 -0.07125
+                                                                rotation 1 0 0 0
+                                                                children [
+                                                                    USE WS_BRACKET
+                                                                    DEF RL_DRIVE HingeJoint {
+                                                                        jointParameters HingeJointParameters {
+                                                                            anchor 0 0.0084 -0.02125
+                                                                            axis 0 1 0
+                                                                        }
+                                                                        device [
+                                                                            RotationalMotor {
+                                                                                name "rl_drive"
+                                                                                maxVelocity 3.6458
+                                                                            }
+                                                                        ]
+                                                                        endPoint Solid {
+                                                                            translation 0 0.0084 -0.02125
+                                                                            rotation 1 0 0 0
+                                                                            children [
+                                                                                USE WS_WHEEL
+                                                                            ]
+                                                                            boundingObject USE WS_WHEEL
+                                                                            physics Physics {
+                                                                                density -1
+                                                                                mass 0.075
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ]
+                                                                boundingObject USE WS_BRACKET
+                                                                physics Physics {
+                                                                    density -1
+                                                                    mass 0.075
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                                # Right part of the rear bogie
+                                Transform {
+                                    translation 0.0425 -0.10375 0
+                                    rotation 1 0 0 0 
+                                    children [
+                                        # Right upper part of the rear bogie
+                                        USE RB_UPPER
+                                        # Right lower part of the rear bogie
+                                        Transform {
+                                            translation 0.01125 0 -0.0325
+                                            rotation 1 0 0 0
+                                            children [
+                                                # Lower right shape
+                                                USE RB_LOWER
+                                                # RR wheel stack
+                                                Transform {
+                                                    translation 0 -0.0375 0.0075
+                                                    rotation 1 0 0 0
+                                                    children [
+                                                        # Right hand wheel stack mount
+                                                        USE WS_MOUNT
+                                                        # Rear right wheel gimbal
+                                                        DEF RR_GIMBAL HingeJoint {
+                                                            jointParameters HingeJointParameters {
+                                                                anchor 0 -0.0084 0
+                                                                axis 0 0 1
+                                                            }
+                                                            device [
+                                                                RotationalMotor {
+                                                                    name "rr_gimbal"
+                                                                    minPosition -1.5865
+                                                                    maxPosition  1.5865
+                                                                }
+                                                            ]
+                                                            endPoint Solid {
+                                                                name "rr_bracket"
+                                                                translation 0 -0.00515 -0.07125
+                                                                rotation 1 0 0 0
+                                                                children [
+                                                                    USE WS_BRACKET
+                                                                    DEF RR_DRIVE HingeJoint {
+                                                                        jointParameters HingeJointParameters {
+                                                                            anchor 0 -0.0084 -0.02125
+                                                                            axis 0 1 0
+                                                                        }
+                                                                        device [
+                                                                            RotationalMotor {
+                                                                                name "rr_drive"
+                                                                                maxVelocity 3.6458
+                                                                            }
+                                                                        ]
+                                                                        endPoint Solid {
+                                                                            translation 0 -0.0084 -0.02125
+                                                                            rotation 1 0 0 0
+                                                                            children [
+                                                                                USE WS_WHEEL
+                                                                            ]
+                                                                            boundingObject USE WS_WHEEL
+                                                                            physics Physics {
+                                                                                density -1
+                                                                                mass 0.075
+                                                                            }
+                                                                        }
+                                                                    }
+                                                                ]
+                                                                boundingObject USE WS_BRACKET
+                                                                physics Physics {
+                                                                    density -1
+                                                                    mass 0.075
+                                                                }
+                                                            }
+                                                        }
+                                                    ]
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                    boundingObject USE RB_MIDDLE
+                    physics Physics {
+                        density -1
+                        mass 0.340
+                    }
+                }
+            }
+
+            # Camera mount
+            Transform {
+                # Mount at top front of rover body
+                translation 0.200 0 0.044
+                # Angled 8.4 deg down
+                rotation 0 1 0 -1.42418832679
+                children [
+                    # Left Camera
+                    Transform {
+                        translation 0 0.05 0
+                        rotation 0 0 1 -1.57079632679
+                        children [
+                            # Left camera (ELP-USB GS 720P02-L36)
+                            DEF L_CAM Camera {
+                                name "l_cam"
+                                fieldOfView 0.7417649 # 42.5 deg horizontal field of view
+                                width 640
+                                height 480
+                                far 10.0
+                            }
+                        ]
+                    }
+
+                    # Right Camera
+                    Transform {
+                        translation 0 -0.05 0
+                        rotation 0 0 1 -1.57079632679
+                        children [
+                            # Right camera (ELP-USB GS 720P02-L36)
+                            DEF R_CAM Camera {
+                                name "r_cam"
+                                fieldOfView 0.7417649 # 42.5 deg horizontal field of view
+                                width 640
+                                height 480
+                                far 10.0
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+
+        boundingObject USE RB
+
+        physics Physics {
+            density -1
+            mass 0.840
+        }
+
+        controller "phobos_rover_v01_controller"
+    }
+}
