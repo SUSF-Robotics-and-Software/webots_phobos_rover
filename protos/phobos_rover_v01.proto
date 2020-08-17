@@ -642,6 +642,14 @@ PROTO phobos_rover_v01 [
                                 height 480
                                 far 10.0
                             }
+                            # Left camera range finder to give depth maps from
+                            # left cam perspective (used to verify depth maps)
+                            DEF L_DEPTH RangeFinder {
+                                name "l_depth"
+                                fieldOfView 0.7417649 # 42.5 deg horizontal field of view
+                                width 640
+                                height 480
+                            }
                         ]
                     }
 

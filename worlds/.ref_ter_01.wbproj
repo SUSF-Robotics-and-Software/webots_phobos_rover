@@ -11,4 +11,5 @@ textFiles: -1
 globalOptionalRendering: CoordinateSystem::CameraFrustums
 consoles: Console:All:All
 renderingDevicePerspectives: robot:l_cam;1;0.358333;0;0
+renderingDevicePerspectives: robot:l_depth;1;0.365625;0;0.348649
 renderingDevicePerspectives: robot:r_cam;1;0.357813;0.773529;0

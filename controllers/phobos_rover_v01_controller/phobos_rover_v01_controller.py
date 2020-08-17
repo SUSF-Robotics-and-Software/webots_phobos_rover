@@ -22,6 +22,10 @@ class PhobosRoverController(Robot):
         self.left_cam.enable(100)
         self.right_cam.enable(100)
 
+        # Get and enable the depth images
+        self.left_depth = self.getRangeFinder("l_depth")
+        self.left_depth.enable(100)
+
         # Get and set motors
         self.gmb_motors = [self.getMotor(name) for name in gmb_motors]
         self.drv_motors = [self.getMotor(name) for name in drv_motors]
