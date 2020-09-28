@@ -6,6 +6,7 @@ PROTO phobos_rover_v01 [
     Robot {
         translation IS translation
         rotation IS rotation
+        synchronization TRUE
 
         children [
             # Rover body

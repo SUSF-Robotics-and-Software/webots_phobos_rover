@@ -1,5 +1,9 @@
 from controller import Robot, Camera, Motor
 import math
+import zmq
+
+# Create zmq context
+context = zmq.Context()
 
 # From loco_ctrl.toml
 gmb_limits = [math.radians(-90), math.radians(90)]
@@ -12,8 +16,9 @@ drv_motors = ["fl_drive", "ml_drive", "rl_drive", "fr_drive", "mr_drive", "rr_dr
 class PhobosRoverController(Robot):
     def __init__(self):
         super(PhobosRoverController, self).__init__()
-        # Timestep of 10 ms
-        self.timestep = 10
+        # Timestep in ms, must be longer than the send/recv timeout in the
+        # mech_client.
+        self.timestep = 1
 
         # Get and enable the cameras
         self.left_cam = self.getCamera("l_cam")
@@ -38,13 +43,33 @@ class PhobosRoverController(Robot):
         # self.gmb_motors[4].setPosition(-corner_angle_rad)
 
         # Make all drives move
-        for drv in self.drv_motors:
-            drv.setPosition(float('inf'))
-            drv.setVelocity(3.0)
+        # for drv in self.drv_motors:
+        #     drv.setPosition(float('inf'))
+        #     drv.setVelocity(3.0)
+
+        # Open the mechanisms server
+        self.mech_rep = context.socket(zmq.REP)
+        self.mech_rep.setsockopt(zmq.RCVTIMEO, 20)
+        self.mech_rep.bind("tcp://*:5000")
+        self.mech_pub = context.socket(zmq.PUB)
+        self.mech_pub.bind("tcp://*:5001")
+
+        print("MechServer started")
 
     def run(self):
         while self.step(self.timestep) != -1:
-            pass
+            # Recieve data from the client
+            try:
+                dems = self.mech_rep.recv_string()
+            except zmq.Again as e:
+                continue
+            except zmq.ZMQError as e:
+                print(f"Error: {e}, ({e.errno})")
+                continue
+
+            print("MechServer - got demands: ", dems)
+
+            self.mech_rep.send_string("\"DemsOk\"")
 
 controller = PhobosRoverController()
 controller.run()
