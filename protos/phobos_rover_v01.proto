@@ -45,7 +45,7 @@ PROTO phobos_rover_v01 [
                                 # Upper part of the left bogie
                                 DEF SB_UPPER Shape {
                                     appearance PBRAppearance {
-                                        baseColor 0.917647 0.145098 0.145098
+                                        baseColor 0.01 0.01 0.07
                                         roughness 1
                                         metalness 0
                                     }
@@ -60,7 +60,7 @@ PROTO phobos_rover_v01 [
                                         # Front part of the left bogie
                                         DEF SB_LOWER Shape {
                                             appearance PBRAppearance {
-                                                baseColor 0.917647 0.145098 0.145098
+                                                baseColor 0.01 0.01 0.07
                                                 roughness 1
                                                 metalness 0
                                             }
@@ -76,7 +76,7 @@ PROTO phobos_rover_v01 [
                                                 # Left hand wheel stack mount
                                                 DEF WS_MOUNT Shape {
                                                     appearance PBRAppearance {
-                                                        baseColor 0.917647 0.145098 0.145098
+                                                        baseColor 0.01 0.01 0.07
                                                         roughness 1
                                                         metalness 0
                                                     }
@@ -104,7 +104,7 @@ PROTO phobos_rover_v01 [
                                                         children [
                                                             DEF WS_BRACKET Shape {
                                                                 appearance PBRAppearance {
-                                                                    baseColor 0.917647 0.145098 0.145098
+                                                                    baseColor 0.01 0.01 0.07
                                                                     roughness 1
                                                                     metalness 0
                                                                 }
@@ -129,7 +129,7 @@ PROTO phobos_rover_v01 [
                                                                     children [
                                                                         DEF WS_WHEEL Shape {
                                                                             appearance PBRAppearance {
-                                                                                baseColor 0.917647 0.145098 0.145098
+                                                                                baseColor 0.01 0.01 0.07
                                                                                 roughness 1
                                                                                 metalness 0
                                                                             }
@@ -430,7 +430,7 @@ PROTO phobos_rover_v01 [
                                 # Upper part of the rear bogie
                                 DEF RB_MIDDLE Shape {
                                     appearance PBRAppearance {
-                                        baseColor 0.917647 0.145098 0.145098
+                                        baseColor 0.01 0.01 0.07
                                         roughness 1
                                         metalness 0
                                     }
@@ -446,7 +446,7 @@ PROTO phobos_rover_v01 [
                                         # Left upper part of the rear bogie
                                         DEF RB_UPPER Shape {
                                             appearance PBRAppearance {
-                                                baseColor 0.917647 0.145098 0.145098
+                                                baseColor 0.01 0.01 0.07
                                                 roughness 1
                                                 metalness 0
                                             }
@@ -462,7 +462,7 @@ PROTO phobos_rover_v01 [
                                                 # Lower left shape
                                                 DEF RB_LOWER Shape {
                                                     appearance PBRAppearance {
-                                                        baseColor 0.917647 0.145098 0.145098
+                                                        baseColor 0.01 0.01 0.07
                                                         roughness 1
                                                         metalness 0
                                                     }
