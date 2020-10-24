@@ -1,4 +1,4 @@
-from controller import Robot, Camera, Motor
+from controller import Robot, Camera, Motor, Supervisor
 import sys
 import math
 import json
@@ -6,6 +6,7 @@ import toml
 import zmq
 import concurrent.futures
 import numpy as np
+from scipy.spatial.transform import Rotation
 from PIL import Image
 import io
 import time
@@ -36,7 +37,7 @@ act_id_motor_group_index_map = {
 	'ArmGrabber': 4
 }
 
-class PhobosRoverController(Robot):
+class PhobosRoverController(Supervisor):
     '''
     Controller interface for the phobos rover
     '''
@@ -48,6 +49,9 @@ class PhobosRoverController(Robot):
         
         # Run the standard Robot class setup
         super(PhobosRoverController, self).__init__()
+
+        # Set the supervisor node for the rover
+        self.sup_node = self.getFromDef('PHOBOS')
 
         # Load the params from the params path
         self.params = toml.load(params_path)
@@ -115,6 +119,12 @@ class PhobosRoverController(Robot):
         for drv in self.drv_motors:
             drv.setVelocity(0.0)
 
+    def pose(self):
+        '''
+        Get the pose of the rover
+        '''
+
+
 
 def step(phobos):
     '''
@@ -149,6 +159,11 @@ def run(phobos):
 
     print('MechServer started')
 
+    # Open sim server
+    sim_pub = context.socket(zmq.PUB)
+    sim_pub.bind(phobos.params['sim_pub_endpoint'])
+
+    print('SimServer started')
 
     # Run flag
     run_controller = True
@@ -160,6 +175,9 @@ def run(phobos):
 
         # Handle any request from the camera process
         handle_cam_req(phobos, cam_pipe)
+
+        # handle the simulation data
+        handle_sim_data(phobos, sim_pub)
 
         # Step the rover
         run_controller = step(phobos)
@@ -369,6 +387,32 @@ def cam_process(cam_endpoint, cam_pipe):
     # Close the pipe
     cam_pipe.close()
 
+def handle_sim_data(phobos, sim_pub):
+    '''
+    Acquire and send simulation data to the sim_client.
+    '''
+
+    # Get the position of the rover
+    pos_m_lm = phobos.sup_node.getPosition()
+
+    # Get the rotation matrix describing the orientation of the rover
+    att_mat = np.array(phobos.sup_node.getOrientation())
+    att_mat = np.reshape(att_mat, (3, 3))
+
+    # Convert the matrix into a quaternion
+    rot = Rotation.from_matrix(att_mat)
+    att_q_lm = rot.as_quat()
+
+    # Build the data object
+    data = {
+        'Pose': {
+            'position_m_lm': pos_m_lm, 
+            'attitude_q_lm': att_q_lm.tolist()
+        }
+    }
+
+    # Send the pose
+    sim_pub.send_json(data)
 
 def main():
 

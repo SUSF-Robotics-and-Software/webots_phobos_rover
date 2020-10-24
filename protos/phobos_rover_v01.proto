@@ -3,10 +3,11 @@ PROTO phobos_rover_v01 [
     field SFRotation rotation     1 0 0 0
 ]
 {
-    Robot {
+    DEF PHOBOS Robot {
         translation IS translation
         rotation IS rotation
         synchronization TRUE
+        supervisor TRUE
 
         children [
             # Rover body
