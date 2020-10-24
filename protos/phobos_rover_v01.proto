@@ -680,6 +680,6 @@ PROTO phobos_rover_v01 [
             mass 0.840
         }
 
-        controller "phobos_rover_v01_controller"
+        controller "phobos_rover_v02_controller"
     }
 }

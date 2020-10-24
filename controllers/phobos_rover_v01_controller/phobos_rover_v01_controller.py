@@ -63,7 +63,7 @@ class PhobosRoverController(Robot):
         super(PhobosRoverController, self).__init__()
         # Timestep in ms, must be longer than the send/recv timeout in the
         # mech_client.
-        self.timestep = 1
+        self.timestep = 20
 
         # Get and enable the cameras
         self.left_cam = self.getCamera('l_cam')

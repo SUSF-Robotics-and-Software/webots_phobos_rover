@@ -1,0 +1,14 @@
+# Timestep of the controller in milliseconds.
+#
+# Set at 10 ms so the conroller runs at 100 Hz.
+controller_timestep_ms = 10
+
+# Camera timesteps
+left_nav_cam_timestep_ms = 100
+right_nav_cam_timestep_ms = 100
+left_depth_cam_timestep_ms = 100
+
+# Endpoints for the sockets
+mech_rep_endpoint = "tcp://0.0.0.0:5000"
+mech_pub_endpoint = "tcp://0.0.0.0:5001"
+cam_rep_endpoint = "tcp://0.0.0.0:5010"
