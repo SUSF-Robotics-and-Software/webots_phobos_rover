@@ -16,7 +16,7 @@ from multiprocessing import Pipe, Process
 
 # Toggle to disble/enable specific servers
 MECH_SERVER = True
-CAM_SERVER = False
+CAM_SERVER = True
 SIM_SERVER = True
 
 # Constants
@@ -128,7 +128,7 @@ class PhobosRoverController(Supervisor):
         '''
         Get the pose of the rover
         '''
-
+        pass
 
 
 def step(phobos):
@@ -150,6 +150,7 @@ def run(phobos):
         cam_proc = Process(target=cam_process, args=(
             phobos.params['cam_rep_endpoint'], cam_child_pipe, 
         ))
+        cam_proc.daemon = True
         cam_proc.start()
         
         print('CamServer started')
@@ -186,26 +187,41 @@ def run(phobos):
     while run_controller:
         # Run mechanisms task
         if MECH_SERVER:
-            run_controller = handle_mech(phobos, mech_rep, mech_pub)
+            run_controller &= handle_mech(phobos, mech_rep, mech_pub)
 
         # Handle any request from the camera process
         if CAM_SERVER:
-            handle_cam_req(phobos, cam_pipe)
+            run_controller &= handle_cam_req(phobos, cam_pipe)
 
         # handle the simulation data
         if SIM_SERVER:
-            handle_sim_data(phobos, sim_pub)
+            run_controller &= handle_sim_data(phobos, sim_pub)
 
         # Step the rover
-        run_controller = step(phobos)
+        run_controller &= step(phobos)
 
         sys.stdout.flush()
+
+    # Close sockets
 
     if CAM_SERVER:
         # Send stop to cam process
         cam_pipe.send('STOP')
         # Join the cam process
         cam_proc.join()
+
+    if MECH_SERVER:
+        mech_rep.close()
+        mech_pub.close()
+
+    if SIM_SERVER:
+        sim_pub.close()
+
+    # Destroy context
+    context.destroy()
+
+    # Tell webots we've exited
+    sys.exit(0)
         
 
 def handle_mech(phobos, mech_rep, mech_pub):
@@ -256,73 +272,100 @@ def handle_cam_req(phobos, cam_pipe):
 
     cam_req = None
 
+    # Data to send back to cam process
+    cam_data = {}
+
+    # If the pipe is closed the sender has quit, so need to return false so
+    # webots knows the server is shutdown
+    if cam_pipe.closed:
+        return False
+
     # Poll for data from the camera process
     if cam_pipe.poll():
 
         cam_req = cam_pipe.recv()
-    
+
+        # If a frame request unpack the request to build data to send back
+        if cam_req['FrameRequest'] is not None:
+            cam_req = cam_req['FrameRequest']
+            cam_data['has_frames'] = True
+        # Otherwise don't unpack and send back a stream settings rejected
+        # packet. The simulation doesn't support streaming data
+        elif cam_req['StreamSettingsRequest'] is not None:
+            cam_data['has_frames'] = False
+        
     # If no request return now
     else:
-        return
+        return True
 
-    # Data to send back to cam process
-    cam_data = {}
-    cam_data['format'] = cam_req['format']
+    # If it was a frames request
+    if cam_data is not None:
 
-    # For each camera in the request acquire an image
-    for cam_id in cam_req['cameras']:
-        # Get the raw data
-        cam_data[cam_id] = {}
-        cam_data[cam_id]['raw'] = phobos.cameras[cam_id].getImage();
-        cam_data[cam_id]['timestamp'] = int(round(time.time() * 1000))
-        cam_data[cam_id]['height'] = phobos.cameras[cam_id].getHeight()
-        cam_data[cam_id]['width'] = phobos.cameras[cam_id].getWidth()
+        cam_data['format'] = cam_req['format']
+
+        # For each camera in the request acquire an image
+        for cam_id in cam_req['cameras']:
+            # Get the raw data
+            cam_data[cam_id] = {}
+            cam_data[cam_id]['raw'] = phobos.cameras[cam_id].getImage();
+            cam_data[cam_id]['timestamp'] = int(round(time.time() * 1000))
+            cam_data[cam_id]['height'] = phobos.cameras[cam_id].getHeight()
+            cam_data[cam_id]['width'] = phobos.cameras[cam_id].getWidth()
 
     # Send data to cam process
     cam_pipe.send(cam_data)
+
+    return True
 
 def handle_cam_send(cam_rep, cam_data):
     '''
     Send data via the zmq socket to the client, formatting in the correct way.
     '''
 
-    # print('Building camera response')
+    res = None
 
-    res = {}
+    # If the data doesn't contain frames
+    if not cam_data['has_frames']:
+        # Make res the rejected response
+        res = 'StreamSettingsRejected'
 
-    # iterate over the raw data and cam IDs
-    for cam_id, data in cam_data.items():
-        if cam_id == 'format':
-            continue
+    # Or if we have frames data
+    else:
+        # Create frames component of response
+        res = {'Frames': {}}
 
-        print(f'Processing {cam_id}')
-        res[cam_id] = {};
+        # iterate over the raw data and cam IDs
+        for cam_id, data in cam_data.items():
+            if cam_id in ['format', 'has_frames']:
+                continue
+            
+            res['Frames'][cam_id] = {};
 
-        # Convert the raw data into a numpy array
-        np_array = np.frombuffer(data['raw'], np.uint8)\
-            .reshape((data['height'], data['width'], 4))
+            # Convert the raw data into a numpy array
+            np_array = np.frombuffer(data['raw'], np.uint8)\
+                .reshape((data['height'], data['width'], 4))
 
-        # Rearrange from BRGA to RGBA
-        np_array = np_array[...,[2,1,0,3]]
+            # Rearrange from BRGA to RGBA
+            np_array = np_array[...,[2,1,0,3]]
 
-        # Convert to a PIL image
-        image = Image.fromarray(np_array)
+            # Convert to a PIL image
+            image = Image.fromarray(np_array)
 
-        # Create a byte array to write into
-        img_bytes = io.BytesIO()
+            # Create a byte array to write into
+            img_bytes = io.BytesIO()
 
-        # Save the image into this array
-        if isinstance(cam_data['format'], str):
-            image.save(img_bytes, format=cam_data['format'])
-        else:
-            image.save(img_bytes, format=list(cam_data['format'].keys())[0])
+            # Save the image into this array
+            if isinstance(cam_data['format'], str):
+                image.save(img_bytes, format=cam_data['format'])
+            else:
+                image.save(img_bytes, format=list(cam_data['format'].keys())[0])
 
-        # Get the raw byte value out
-        img_bytes = img_bytes.getvalue()
+            # Get the raw byte value out
+            img_bytes = img_bytes.getvalue()
 
-        res[cam_id]['timestamp'] = data['timestamp']
-        res[cam_id]['format'] = cam_data['format']
-        res[cam_id]['b64_data'] = base64.b64encode(img_bytes).decode('ascii')
+            res['Frames'][cam_id]['timestamp'] = data['timestamp']
+            res['Frames'][cam_id]['format'] = cam_data['format']
+            res['Frames'][cam_id]['b64_data'] = base64.b64encode(img_bytes).decode('ascii')
 
 
     # Get the response as a JSON string
@@ -351,6 +394,8 @@ def cam_process(cam_endpoint, cam_pipe):
 
     # Flag indicating if we're still handling a request
     handling_req = False
+
+    print('Camera process started')
 
     while run_process:
 
@@ -405,6 +450,12 @@ def cam_process(cam_endpoint, cam_pipe):
     # Close the pipe
     cam_pipe.close()
 
+    # Kill the socket
+    cam_rep.close()
+
+    # Destroy the context
+    context.destroy()
+
 def handle_sim_data(phobos, sim_pub):
     '''
     Acquire and send simulation data to the sim_client.
@@ -431,6 +482,8 @@ def handle_sim_data(phobos, sim_pub):
 
     # Send the pose
     sim_pub.send_json(data)
+
+    return True
 
 def main():
 
