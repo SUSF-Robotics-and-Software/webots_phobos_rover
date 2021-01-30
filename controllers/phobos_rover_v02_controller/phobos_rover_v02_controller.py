@@ -14,6 +14,11 @@ import base64
 import multiprocessing as mp
 from multiprocessing import Pipe, Process
 
+# Toggle to disble/enable specific servers
+MECH_SERVER = True
+CAM_SERVER = False
+SIM_SERVER = True
+
 # Constants
 str_motor_order = ['fl_gimbal', 'ml_gimbal', 'rl_gimbal', 'fr_gimbal', 'mr_gimbal', 'rr_gimbal']
 drv_motor_order = ['fl_drive', 'ml_drive', 'rl_drive', 'fr_drive', 'mr_drive', 'rr_drive']
@@ -140,30 +145,39 @@ def run(phobos):
     '''
 
     # Create the cam server bg process and queue
-    (cam_pipe, cam_child_pipe) = Pipe()
-    cam_proc = Process(target=cam_process, args=(
-        phobos.params['cam_rep_endpoint'], cam_child_pipe, 
-    ))
-    cam_proc.start()
-    
-    print('CamServer started')
+    if CAM_SERVER:
+        (cam_pipe, cam_child_pipe) = Pipe()
+        cam_proc = Process(target=cam_process, args=(
+            phobos.params['cam_rep_endpoint'], cam_child_pipe, 
+        ))
+        cam_proc.start()
+        
+        print('CamServer started')
+    else:
+        print('CamServer disabled')
 
     # Create zmq context
     context = zmq.Context()
 
     # Open mechanisms server
-    mech_rep = context.socket(zmq.REP)
-    mech_rep.bind(phobos.params['mech_rep_endpoint'])
-    mech_pub = context.socket(zmq.PUB)
-    mech_pub.bind(phobos.params['mech_pub_endpoint'])
+    if MECH_SERVER:
+        mech_rep = context.socket(zmq.REP)
+        mech_rep.bind(phobos.params['mech_rep_endpoint'])
+        mech_pub = context.socket(zmq.PUB)
+        mech_pub.bind(phobos.params['mech_pub_endpoint'])
 
-    print('MechServer started')
+        print('MechServer started')
+    else:
+        print('MechServer disabled')
 
     # Open sim server
-    sim_pub = context.socket(zmq.PUB)
-    sim_pub.bind(phobos.params['sim_pub_endpoint'])
+    if SIM_SERVER:
+        sim_pub = context.socket(zmq.PUB)
+        sim_pub.bind(phobos.params['sim_pub_endpoint'])
 
-    print('SimServer started')
+        print('SimServer started')
+    else:
+        print('SimServer disabled')
 
     # Run flag
     run_controller = True
@@ -171,23 +185,27 @@ def run(phobos):
     print('Starting main control loop')
     while run_controller:
         # Run mechanisms task
-        run_controller = handle_mech(phobos, mech_rep, mech_pub)
+        if MECH_SERVER:
+            run_controller = handle_mech(phobos, mech_rep, mech_pub)
 
         # Handle any request from the camera process
-        handle_cam_req(phobos, cam_pipe)
+        if CAM_SERVER:
+            handle_cam_req(phobos, cam_pipe)
 
         # handle the simulation data
-        handle_sim_data(phobos, sim_pub)
+        if SIM_SERVER:
+            handle_sim_data(phobos, sim_pub)
 
         # Step the rover
         run_controller = step(phobos)
 
         sys.stdout.flush()
 
-    # Send stop to cam process
-    cam_pipe.send('STOP')
-    # Join the cam process
-    cam_proc.join()
+    if CAM_SERVER:
+        # Send stop to cam process
+        cam_pipe.send('STOP')
+        # Join the cam process
+        cam_proc.join()
         
 
 def handle_mech(phobos, mech_rep, mech_pub):
@@ -204,7 +222,7 @@ def handle_mech(phobos, mech_rep, mech_pub):
     except zmq.Again:
         mech_dems = None
     except zmq.ZMQError as e:
-        print(f'MechServer: Error - {e}, ({e.errno}')
+        print(f'MechServer: Error - {e}, ({e.errno})')
         stop = True
         mech_dems = None
     except Exception as e:
