@@ -18,6 +18,7 @@ from multiprocessing import Pipe, Process
 MECH_SERVER = True
 CAM_SERVER = True
 SIM_SERVER = True
+PERLOC_SERVER = True
 
 # Constants
 str_motor_order = ['fl_gimbal', 'ml_gimbal', 'rl_gimbal', 'fr_gimbal', 'mr_gimbal', 'rr_gimbal']
@@ -103,7 +104,7 @@ class PhobosRoverController(Supervisor):
             # Get the motor group
             group = act_id[:3]
 
-            if group == 'Str':
+            if group in ['Str', 'Arm']:
                 self.str_motors[act_id_motor_group_index_map[act_id]] \
                     .setPosition(position_rad)
 
@@ -143,6 +144,19 @@ def run(phobos):
     '''
     Run the controller.
     '''
+
+    # Create perloc server bg process and queue
+    if PERLOC_SERVER:
+        (perloc_pipe, perloc_child_pipe) = Pipe()
+        perloc_proc = Process(target=perloc_process, args=(
+            phobos.params['perloc_rep_endpoint'], perloc_child_pipe
+        ))
+        perloc_proc.daemon = True
+        perloc_proc.start()
+
+        print('PerlocServer started')
+    else:
+        print('PerlocServer disabled')
 
     # Create the cam server bg process and queue
     if CAM_SERVER:
@@ -189,6 +203,10 @@ def run(phobos):
         if MECH_SERVER:
             run_controller &= handle_mech(phobos, mech_rep, mech_pub)
 
+        # Handle any requests from the perloc process
+        if PERLOC_SERVER:
+            run_controller &= handle_perloc_req(phobos, perloc_pipe)
+
         # Handle any request from the camera process
         if CAM_SERVER:
             run_controller &= handle_cam_req(phobos, cam_pipe)
@@ -203,6 +221,10 @@ def run(phobos):
         sys.stdout.flush()
 
     # Close sockets
+
+    if PERLOC_SERVER:
+        perloc_pipe.send('STOP')
+        perloc_proc.join()
 
     if CAM_SERVER:
         # Send stop to cam process
@@ -263,6 +285,181 @@ def handle_mech(phobos, mech_rep, mech_pub):
         phobos.actuate_mech_dems(mech_dems)
 
     return True
+
+def to_cam_frame(data):
+    '''
+    Converts the data to a CamFrame struct.
+    '''
+
+    frame = {}
+
+    # Convert the raw data into a numpy array
+    np_array = np.frombuffer(data['raw'], np.uint8)\
+        .reshape((data['height'], data['width'], 4))
+
+    # Rearrange from BRGA to RGBA
+    np_array = np_array[...,[2,1,0,3]]
+
+    # Convert to a PIL image
+    image = Image.fromarray(np_array)
+
+    # Create a byte array to write into
+    img_bytes = io.BytesIO()
+
+    # Save the image into this array
+    if isinstance(data['format'], str):
+        image.save(img_bytes, format=data['format'])
+    else:
+        image.save(img_bytes, format=list(data['format'].keys())[0])
+
+    # Get the raw byte value out
+    img_bytes = img_bytes.getvalue()
+
+    frame['timestamp'] = data['timestamp']
+    frame['format'] = data['format']
+    frame['b64_data'] = base64.b64encode(img_bytes).decode('ascii')
+
+    return frame
+
+def to_depth_frame(data):
+    '''
+    Converts the data into a DepthFrame struct.
+    '''
+
+    frame = {}
+
+    # Flatten the array
+    np_array = np.array(data['raw']).flatten()
+
+    # Convert to u16 mm values from f32 m
+    np_array = (np_array * 1000.0).astype(np.uint16)
+
+    # build the frame
+    frame['timestamp'] = data['timestamp']
+    frame['width'] = data['width']
+    frame['height'] = data['height']
+    frame['b64_data'] = base64.b64encode(np_array).decode('ascii')
+
+    return frame
+
+def handle_perloc_req(phobos, perloc_pipe):
+    '''
+    Handle a possible perlooc request from the perloc process, then send data 
+    back to the perloc process for sending.
+    '''
+
+    perloc_req = None
+
+    # Data to send back to cam process
+    perloc_res = {}
+
+    # If the pipe is closed the sender has quit, so need to return false so
+    # webots knows the server is shutdown
+    if perloc_pipe.closed:
+        return False
+
+    # Poll for data from the camera process
+    if perloc_pipe.poll():
+
+        perloc_req = perloc_pipe.recv()
+
+        # If a frame request unpack the request to build data to send back
+        if perloc_req == 'AcqDepthFrame':
+            # Set data for depth camera
+            data = {
+                'raw': phobos.cameras['LeftDepth'].getRangeImage(),
+                'timestamp': int(round(time.time() * 1000)),
+                'height': phobos.cameras['LeftDepth'].getHeight(),
+                'width': phobos.cameras['LeftDepth'].getWidth()
+            }
+            perloc_res['DepthFrame'] = to_depth_frame(data)
+        # Otherwise
+        else:
+            pass
+        
+    # If no request return now
+    else:
+        return True
+
+    # Send data to cam process
+    perloc_pipe.send(perloc_res)
+
+    return True
+
+def perloc_process(perloc_endpoint, perloc_pipe):
+    '''
+    Handle perloc-related networking in a separate process.
+    '''
+    print('Starting perloc process')
+
+    # Create new zmq context
+    context = zmq.Context()
+
+    # Open perloc server
+    perloc_rep = context.socket(zmq.REP)
+    perloc_rep.bind(perloc_endpoint)
+
+    # Flag keepint the process running
+    run_process = True
+
+    # Flag indicating if we're still handling a request
+    handling_req = False
+
+    print('Perloc process started')
+
+    while run_process:
+
+        msg = None
+
+        # If there's data in the pipe
+        if perloc_pipe.poll():
+            # Get the data
+            msg = perloc_pipe.recv()
+
+            # If got a stop message exit the loop
+            if isinstance(msg, str):
+                if msg == 'STOP':
+                    break
+        else:
+            # If no data don't do anything
+            pass
+
+        # If we got data from the main process send it
+        if isinstance(msg, dict):
+            # Convert to json
+            res_str = json.dumps(msg)
+
+            # Send the data
+            perloc_rep.send_string(res_str)
+
+            # Unset the handling req flag
+            handling_req = False
+
+        # If still handling a request don't try to recieve data from the client
+        if handling_req:
+            continue
+
+        # Get request from the rep socket
+        try:
+            req_str = perloc_rep.recv_string(flags=zmq.NOBLOCK)
+            perloc_req = json.loads(req_str)
+        except zmq.Again:
+            perloc_req = None
+        except zmq.ZMQError as e:
+            print(f'PerlocServer: Error - {e}, ({e.errno}')
+            perloc_req = None
+        except Exception as e:
+            print(f'PerlocServer Exception: {e}')
+            perloc_req = None
+
+        if perloc_req is None:
+            continue
+
+        # Send request to main client
+        perloc_pipe.send(perloc_req)
+
+        # Raise handling req flag
+        handling_req = True
 
 def handle_cam_req(phobos, cam_pipe):
     '''
@@ -336,37 +533,12 @@ def handle_cam_send(cam_rep, cam_data):
 
         # iterate over the raw data and cam IDs
         for cam_id, data in cam_data.items():
-            if cam_id in ['format', 'has_frames']:
+            data['format'] = cam_data['format']
+            frame = to_cam_frame(data)
+            if frame is None:
                 continue
-            
-            res['Frames'][cam_id] = {};
-
-            # Convert the raw data into a numpy array
-            np_array = np.frombuffer(data['raw'], np.uint8)\
-                .reshape((data['height'], data['width'], 4))
-
-            # Rearrange from BRGA to RGBA
-            np_array = np_array[...,[2,1,0,3]]
-
-            # Convert to a PIL image
-            image = Image.fromarray(np_array)
-
-            # Create a byte array to write into
-            img_bytes = io.BytesIO()
-
-            # Save the image into this array
-            if isinstance(cam_data['format'], str):
-                image.save(img_bytes, format=cam_data['format'])
             else:
-                image.save(img_bytes, format=list(cam_data['format'].keys())[0])
-
-            # Get the raw byte value out
-            img_bytes = img_bytes.getvalue()
-
-            res['Frames'][cam_id]['timestamp'] = data['timestamp']
-            res['Frames'][cam_id]['format'] = cam_data['format']
-            res['Frames'][cam_id]['b64_data'] = base64.b64encode(img_bytes).decode('ascii')
-
+                res['Frames'][cam_id] = frame
 
     # Get the response as a JSON string
     res_str = json.dumps(res)
@@ -421,7 +593,7 @@ def cam_process(cam_endpoint, cam_pipe):
             # Unset the handling req flag
             handling_req = False
 
-        # If still handling a request don't try to recieve data form the client
+        # If still handling a request don't try to recieve data from the client
         if handling_req:
             continue
 

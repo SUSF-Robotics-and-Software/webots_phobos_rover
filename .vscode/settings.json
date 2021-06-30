@@ -4,5 +4,5 @@
         "titleBar.activeBackground": "#4B20A3",
         "titleBar.activeForeground": "#FDFCFE"
     },
-    "python.pythonPath": "C:\\Users\\drh\\AppData\\Local\\Programs\\Python\\Python38\\python.exe"
+    "python.pythonPath": "/usr/bin/python3.8"
 }

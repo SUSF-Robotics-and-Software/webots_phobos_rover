@@ -1,0 +1,22 @@
+#VRML_SIM R2021a utf8
+WorldInfo {
+}
+Viewpoint {
+  orientation 0.9182910405268414 0.1838913965313013 0.3506073575524321 1.1999825801607316
+  position 0.6782559740070432 -1.4085395068778588 0.855365882535903
+  follow "robot"
+}
+Floor {
+  rotation 1 0 0 1.57
+  size 50 50
+  tileSize 1 1
+}
+TexturedBackground {
+  texture "mars"
+}
+TexturedBackgroundLight {
+}
+DEF PHOBOS phobos_rover_v01 {
+  translation 8.02186e-05 0.00932096 0.16
+  rotation 4.996579999936036e-06 7.983569999897798e-07 -0.9999999999871985 0.0105429
+}
