@@ -332,7 +332,7 @@ def to_depth_frame(data):
     np_array = np.array(data['raw']).flatten()
 
     # Convert to u16 mm values from f32 m
-    np_array = (np_array * 1000.0).astype(np.uint16)
+    np_array = (np_array * 1000.0).astype(np.uint16).byteswap()
 
     # build the frame
     frame['timestamp'] = data['timestamp']
