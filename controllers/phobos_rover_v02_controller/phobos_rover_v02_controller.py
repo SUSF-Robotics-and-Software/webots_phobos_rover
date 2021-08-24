@@ -104,7 +104,7 @@ class PhobosRoverController(Supervisor):
             # Get the motor group
             group = act_id[:3]
 
-            if group in ['Str', 'Arm']:
+            if group == 'Str':
                 self.str_motors[act_id_motor_group_index_map[act_id]] \
                     .setPosition(position_rad)
 

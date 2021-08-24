@@ -26,6 +26,8 @@ PROTO phobos_rover_v01 [
                 jointParameters HingeJointParameters {
                     anchor 0.075 0.10625 0.0260
                     axis 0 1 0
+                    minStop -0.5
+                    maxStop 0.5
                 }
                 device [
                     # Position sensors not available on v01 of the rover but 
@@ -242,6 +244,8 @@ PROTO phobos_rover_v01 [
                 jointParameters HingeJointParameters {
                     anchor 0.075 -0.10625 0.0260
                     axis 0 1 0
+                    minStop -0.5
+                    maxStop 0.5
                 }
                 device [
                     # Position sensors not available on v01 of the rover but 
@@ -651,6 +655,7 @@ PROTO phobos_rover_v01 [
                                 fieldOfView 0.7417649 # 42.5 deg horizontal field of view
                                 width 640
                                 height 480
+                                maxRange 10.0
                             }
                         ]
                     }
