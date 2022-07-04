@@ -12,5 +12,5 @@ left_depth_cam_timestep_ms = 100
 mech_rep_endpoint = "tcp://0.0.0.0:5000"
 mech_pub_endpoint = "tcp://0.0.0.0:5001"
 cam_rep_endpoint = "tcp://0.0.0.0:5010"
-perloc_rep_endpoint = "tcp://0.0.0.0:5040"
+perloc_rep_endpoint = "tcp://0.0.0.0:5050"
 sim_pub_endpoint = "tcp://0.0.0.0:5100"

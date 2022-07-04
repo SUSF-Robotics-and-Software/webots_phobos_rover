@@ -52,7 +52,7 @@ class PhobosRoverController(Supervisor):
         '''
         Main constructor, initialises the controller.
         '''
-        
+
         # Run the standard Robot class setup
         super(PhobosRoverController, self).__init__()
 
@@ -69,28 +69,28 @@ class PhobosRoverController(Supervisor):
         '''
         Initialise the equipment of the rover.
 
-        This function will find all equipment in the simulation and set 
+        This function will find all equipment in the simulation and set
         endpoints in self to be able to access them
         '''
 
         # Get camera endpoints
         self.cameras = {}
-        self.cameras['LeftNav'] = self.getCamera('l_cam')
-        self.cameras['RightNav'] = self.getCamera('r_cam')
+        self.cameras['LeftNav'] = self.getDevice('l_cam')
+        self.cameras['RightNav'] = self.getDevice('r_cam')
 
         # Enable cameras at the specified frequencies
         self.cameras['LeftNav'].enable(self.params['left_nav_cam_timestep_ms'])
         self.cameras['RightNav'].enable(self.params['right_nav_cam_timestep_ms'])
-        
+
         # Get and enable the depth images
-        self.cameras['LeftDepth'] = self.getRangeFinder('l_depth')
+        self.cameras['LeftDepth'] = self.getDevice('l_depth')
         self.cameras['LeftDepth'].enable(self.params['left_depth_cam_timestep_ms'])
 
         # Get steer motors
-        self.str_motors = [self.getMotor(name) for name in str_motor_order]
+        self.str_motors = [self.getDevice(name) for name in str_motor_order]
 
         # Get drive motors
-        self.drv_motors = [self.getMotor(name) for name in drv_motor_order]
+        self.drv_motors = [self.getDevice(name) for name in drv_motor_order]
 
     def actuate_mech_dems(self, dems):
         '''
@@ -162,11 +162,11 @@ def run(phobos):
     if CAM_SERVER:
         (cam_pipe, cam_child_pipe) = Pipe()
         cam_proc = Process(target=cam_process, args=(
-            phobos.params['cam_rep_endpoint'], cam_child_pipe, 
+            phobos.params['cam_rep_endpoint'], cam_child_pipe,
         ))
         cam_proc.daemon = True
         cam_proc.start()
-        
+
         print('CamServer started')
     else:
         print('CamServer disabled')
@@ -244,7 +244,7 @@ def run(phobos):
 
     # Tell webots we've exited
     sys.exit(0)
-        
+
 
 def handle_mech(phobos, mech_rep, mech_pub):
     '''
@@ -254,7 +254,7 @@ def handle_mech(phobos, mech_rep, mech_pub):
     stop = False
 
     # Get mechanisms demands from the rep socket
-    try: 
+    try:
         dems_str = mech_rep.recv_string(flags=zmq.NOBLOCK)
         mech_dems = json.loads(dems_str)
     except zmq.Again:
@@ -344,7 +344,7 @@ def to_depth_frame(data):
 
 def handle_perloc_req(phobos, perloc_pipe):
     '''
-    Handle a possible perlooc request from the perloc process, then send data 
+    Handle a possible perlooc request from the perloc process, then send data
     back to the perloc process for sending.
     '''
 
@@ -376,7 +376,7 @@ def handle_perloc_req(phobos, perloc_pipe):
         # Otherwise
         else:
             pass
-        
+
     # If no request return now
     else:
         return True
@@ -390,7 +390,7 @@ def perloc_process(perloc_endpoint, perloc_pipe):
     '''
     Handle perloc-related networking in a separate process.
     '''
-    print('Starting perloc process')
+    print(f'Starting perloc process {perloc_endpoint}')
 
     # Create new zmq context
     context = zmq.Context()
@@ -463,7 +463,7 @@ def perloc_process(perloc_endpoint, perloc_pipe):
 
 def handle_cam_req(phobos, cam_pipe):
     '''
-    Handle a possible camera request from the camera process, then send data 
+    Handle a possible camera request from the camera process, then send data
     back to the cam process for sending.
     '''
 
@@ -490,7 +490,7 @@ def handle_cam_req(phobos, cam_pipe):
         # packet. The simulation doesn't support streaming data
         elif cam_req['StreamSettingsRequest'] is not None:
             cam_data['has_frames'] = False
-        
+
     # If no request return now
     else:
         return True
@@ -647,7 +647,7 @@ def handle_sim_data(phobos, sim_pub):
     # Build the data object
     data = {
         'Pose': {
-            'position_m_lm': pos_m_lm, 
+            'position_m_lm': pos_m_lm,
             'attitude_q_lm': att_q_lm.tolist()
         }
     }
