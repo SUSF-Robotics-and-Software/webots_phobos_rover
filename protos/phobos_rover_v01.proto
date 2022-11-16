@@ -1,6 +1,6 @@
 PROTO phobos_rover_v01 [
     field SFVec3f    translation  0 0 0
-    field SFRotation rotation     1 0 0 0
+    field SFRotation rotation     0 0 1 0
 ]
 {
     DEF PHOBOS Robot {
@@ -128,7 +128,7 @@ PROTO phobos_rover_v01 [
                                                                 ]
                                                                 endPoint Solid {
                                                                     translation 0 0.0084 -0.02125
-                                                                    rotation 1 0 0 0
+                                                                    rotation 1 0 0 1.5708
                                                                     children [
                                                                         DEF WS_WHEEL Shape {
                                                                             appearance PBRAppearance {
@@ -206,7 +206,7 @@ PROTO phobos_rover_v01 [
                                                                 ]
                                                                 endPoint Solid {
                                                                     translation 0 0.0084 -0.02125
-                                                                    rotation 1 0 0 0
+                                                                    rotation 1 0 0 1.5708
                                                                     children [
                                                                         USE WS_WHEEL
                                                                     ]
@@ -310,7 +310,7 @@ PROTO phobos_rover_v01 [
                                                                 ]
                                                                 endPoint Solid {
                                                                     translation 0 -0.0084 -0.02125
-                                                                    rotation 1 0 0 0
+                                                                    rotation 1 0 0 1.5708
                                                                     children [
                                                                         USE WS_WHEEL
                                                                     ]
@@ -378,7 +378,7 @@ PROTO phobos_rover_v01 [
                                                                 ]
                                                                 endPoint Solid {
                                                                     translation 0 -0.0084 -0.02125
-                                                                    rotation 1 0 0 0
+                                                                    rotation 1 0 0 1.5708
                                                                     children [
                                                                         USE WS_WHEEL
                                                                     ]
@@ -514,7 +514,7 @@ PROTO phobos_rover_v01 [
                                                                         ]
                                                                         endPoint Solid {
                                                                             translation 0 0.0084 -0.02125
-                                                                            rotation 1 0 0 0
+                                                                            rotation 1 0 0 1.5708
                                                                             children [
                                                                                 USE WS_WHEEL
                                                                             ]
@@ -592,7 +592,7 @@ PROTO phobos_rover_v01 [
                                                                         ]
                                                                         endPoint Solid {
                                                                             translation 0 -0.0084 -0.02125
-                                                                            rotation 1 0 0 0
+                                                                            rotation 1 0 0 1.5708
                                                                             children [
                                                                                 USE WS_WHEEL
                                                                             ]
@@ -633,12 +633,12 @@ PROTO phobos_rover_v01 [
                 # Mount at top front of rover body
                 translation 0.200 0 0.044
                 # Angled 8.4 deg down
-                rotation 0 1 0 -1.42418832679
+                rotation 0 0 1 -1.42418832679
                 children [
                     # Left Camera
                     Transform {
                         translation 0 0.05 0
-                        rotation 0 0 1 -1.57079632679
+                        rotation 0 0 1 1.57079632679
                         children [
                             # Left camera (ELP-USB GS 720P02-L36)
                             DEF L_CAM Camera {
@@ -663,7 +663,7 @@ PROTO phobos_rover_v01 [
                     # Right Camera
                     Transform {
                         translation 0 -0.05 0
-                        rotation 0 0 1 -1.57079632679
+                        rotation 0 0 1 1.57079632679
                         children [
                             # Right camera (ELP-USB GS 720P02-L36)
                             DEF R_CAM Camera {
